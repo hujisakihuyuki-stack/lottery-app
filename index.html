@@ -5,37 +5,47 @@
   <title>くじ引きアプリ</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-top: 5px; }
     #result { margin-top: 20px; font-size: 24px; font-weight: bold; }
-    #history { margin-top: 30px; }
+    #history { margin-top: 10px; }
     #history li { margin-bottom: 5px; }
+    #historyTitle { margin-top: 30px; font-weight: bold; font-size: 18px; }
   </style>
 </head>
 <body>
   <h1>くじ引きアプリ</h1>
   <button id="drawBtn">今日の一人！</button>
   <div id="result"></div>
+
+  <div id="historyTitle">りれき</div>
   <ul id="history"></ul>
+  
+  <div>
+    <input type="checkbox" id="confirmClear">
+    <label for="confirmClear">履歴を初期化できます</label>
+    <button id="clearBtn">履歴を消す</button>
+  </div>
 
   <script>
     let names = [];
+    let allNames = [];
     let historyList = [];
 
     // JSONを読み込む
     fetch("names.json")
       .then(response => response.json())
       .then(data => {
-        names = [...data.names];
+        allNames = [...data.names]; // 元の名前リストを保持
+        names = [...allNames];
 
         // localStorageに履歴があれば復元
         const savedHistory = localStorage.getItem('history');
         if(savedHistory) {
           historyList = JSON.parse(savedHistory);
-          // 履歴表示更新
           updateHistory();
           // 名前リストから履歴分を除外
-          historyList.forEach(name => {
-            const idx = names.indexOf(name);
+          historyList.forEach(item => {
+            const idx = names.indexOf(item.name);
             if(idx !== -1) names.splice(idx, 1);
           });
         }
@@ -45,6 +55,8 @@
     const drawBtn = document.getElementById("drawBtn");
     const resultDiv = document.getElementById("result");
     const historyUl = document.getElementById("history");
+    const clearBtn = document.getElementById("clearBtn");
+    const confirmClear = document.getElementById("confirmClear");
 
     drawBtn.addEventListener("click", () => {
       if(names.length === 0) {
@@ -57,19 +69,37 @@
       setTimeout(() => {
         const idx = Math.floor(Math.random() * names.length);
         const winner = names.splice(idx, 1)[0];
-        historyList.unshift(winner); // 新しい順に上に追加
-        localStorage.setItem('history', JSON.stringify(historyList)); // 保存
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
 
-        resultDiv.textContent = `🎉 ${winner} 🎉`;
+        historyList.unshift({ name: winner, time: timeStr });
+        localStorage.setItem('history', JSON.stringify(historyList));
+
+        resultDiv.textContent = `🎉 ${winner} 🎉 (${timeStr})`;
         updateHistory();
       }, 500);
     });
 
+    clearBtn.addEventListener("click", () => {
+      if(!confirmClear.checked) {
+        alert("チェックを入れてから初期化してください");
+        return;
+      }
+      if(confirm("本当に履歴を消しますか？")) {
+        historyList = [];
+        localStorage.removeItem('history');
+        names = [...allNames]; // 全員復活
+        resultDiv.textContent = "";
+        updateHistory();
+        alert("履歴を初期化しました");
+      }
+    });
+
     function updateHistory() {
       historyUl.innerHTML = "";
-      historyList.forEach(name => {
+      historyList.forEach(item => {
         const li = document.createElement("li");
-        li.textContent = name;
+        li.textContent = `${item.name} (${item.time})`;
         historyUl.appendChild(li);
       });
     }
