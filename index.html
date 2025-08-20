@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>今日の一人！</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; }
+    #result { font-size: 1.5em; margin: 1em 0; }
+    #history { margin-top: 2em; }
+  </style>
+</head>
+<body>
+  <h1>今日の一人！</h1>
+  <button id="draw">今日の一人！</button>
+  <div id="result"></div>
+  <h2>履歴</h2>
+  <ul id="history"></ul>
+
+  <script>
+    async function loadNames() {
+      const res = await fetch('names.json');
+      return await res.json();
+    }
+
+    const drawBtn = document.getElementById('draw');
+    const resultDiv = document.getElementById('result');
+    const historyList = document.getElementById('history');
+
+    // 履歴を localStorage からロード
+    let history = JSON.parse(localStorage.getItem('lotteryHistory') || '[]');
+    history.forEach(name => addHistoryItem(name));
+
+    function addHistoryItem(name) {
+      const li = document.createElement('li');
+      li.textContent = name;
+      historyList.prepend(li);
+    }
+
+    drawBtn.onclick = async () => {
+      const names = await loadNames();
+      const name = names[Math.floor(Math.random() * names.length)];
+      resultDiv.textContent = "抽選中...";
+      setTimeout(() => {
+        resultDiv.textContent = `🎉 ${name} 🎉`;
+        history.unshift(name);
+        localStorage.setItem('lotteryHistory', JSON.stringify(history));
+        addHistoryItem(name);
+      }, 800);
+    };
+  </script>
+</body>
+</html>
