@@ -2,51 +2,61 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>今日の一人！</title>
+  <title>くじ引きアプリ</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 2em; }
-    #result { font-size: 1.5em; margin: 1em 0; }
-    #history { margin-top: 2em; }
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    #result { margin-top: 20px; font-size: 24px; font-weight: bold; }
+    #history { margin-top: 30px; }
+    #history li { margin-bottom: 5px; }
   </style>
 </head>
 <body>
-  <h1>今日の一人！</h1>
-  <button id="draw">今日の一人！</button>
+  <h1>くじ引きアプリ</h1>
+  <button id="drawBtn">今日の一人！</button>
   <div id="result"></div>
-  <h2>履歴</h2>
   <ul id="history"></ul>
 
   <script>
-    async function loadNames() {
-      const res = await fetch('names.json');
-      return await res.json();
-    }
+    let names = [];
+    let historyList = [];
 
-    const drawBtn = document.getElementById('draw');
-    const resultDiv = document.getElementById('result');
-    const historyList = document.getElementById('history');
+    // JSONを読み込む
+    fetch("names.json")
+      .then(response => response.json())
+      .then(data => {
+        names = [...data.names]; // data.names の形に注意
+        historyList = [];
+      })
+      .catch(err => console.error("読み込み失敗:", err));
 
-    // 履歴を localStorage からロード
-    let history = JSON.parse(localStorage.getItem('lotteryHistory') || '[]');
-    history.forEach(name => addHistoryItem(name));
+    const drawBtn = document.getElementById("drawBtn");
+    const resultDiv = document.getElementById("result");
+    const historyUl = document.getElementById("history");
 
-    function addHistoryItem(name) {
-      const li = document.createElement('li');
-      li.textContent = name;
-      historyList.prepend(li);
-    }
+    drawBtn.addEventListener("click", () => {
+      if(names.length === 0) {
+        resultDiv.textContent = "もう抽選できる人がいません！";
+        return;
+      }
 
-    drawBtn.onclick = async () => {
-      const names = await loadNames();
-      const name = names[Math.floor(Math.random() * names.length)];
-      resultDiv.textContent = "抽選中...";
+      resultDiv.textContent = "抽選中…";
+
       setTimeout(() => {
-        resultDiv.textContent = `🎉 ${name} 🎉`;
-        history.unshift(name);
-        localStorage.setItem('lotteryHistory', JSON.stringify(history));
-        addHistoryItem(name);
-      }, 800);
-    };
+        const idx = Math.floor(Math.random() * names.length);
+        const winner = names.splice(idx, 1)[0];
+        historyList.unshift(winner); // 新しい順に上に追加
+        resultDiv.textContent = `🎉 ${winner} 🎉`;
+
+        // 履歴表示
+        historyUl.innerHTML = "";
+        historyList.forEach(name => {
+          const li = document.createElement("li");
+          li.textContent = name;
+          historyUl.appendChild(li);
+        });
+      }, 500); // 0.5秒後に発表
+    });
   </script>
 </body>
 </html>
