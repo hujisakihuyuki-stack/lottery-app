@@ -25,8 +25,20 @@
     fetch("names.json")
       .then(response => response.json())
       .then(data => {
-        names = [...data.names]; // data.names の形に注意
-        historyList = [];
+        names = [...data.names];
+
+        // localStorageに履歴があれば復元
+        const savedHistory = localStorage.getItem('history');
+        if(savedHistory) {
+          historyList = JSON.parse(savedHistory);
+          // 履歴表示更新
+          updateHistory();
+          // 名前リストから履歴分を除外
+          historyList.forEach(name => {
+            const idx = names.indexOf(name);
+            if(idx !== -1) names.splice(idx, 1);
+          });
+        }
       })
       .catch(err => console.error("読み込み失敗:", err));
 
@@ -46,17 +58,21 @@
         const idx = Math.floor(Math.random() * names.length);
         const winner = names.splice(idx, 1)[0];
         historyList.unshift(winner); // 新しい順に上に追加
-        resultDiv.textContent = `🎉 ${winner} 🎉`;
+        localStorage.setItem('history', JSON.stringify(historyList)); // 保存
 
-        // 履歴表示
-        historyUl.innerHTML = "";
-        historyList.forEach(name => {
-          const li = document.createElement("li");
-          li.textContent = name;
-          historyUl.appendChild(li);
-        });
-      }, 500); // 0.5秒後に発表
+        resultDiv.textContent = `🎉 ${winner} 🎉`;
+        updateHistory();
+      }, 500);
     });
+
+    function updateHistory() {
+      historyUl.innerHTML = "";
+      historyList.forEach(name => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        historyUl.appendChild(li);
+      });
+    }
   </script>
 </body>
 </html>
